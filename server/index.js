@@ -119,7 +119,7 @@ app.post('/synthesize', async (req, res) => {
       );
     });
 
-    const audioUrl = `http://localhost:${port}/audio/${path.basename(audioFile)}`;
+    const audioUrl = `${req.protocol}://${req.get('host')}/audio/${path.basename(audioFile)}`;
     res.json({ audioUrl });
 
     setTimeout(() => {
