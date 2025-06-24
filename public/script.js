@@ -6,13 +6,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const userInput = document.getElementById("user-input");
   const fileInput = document.getElementById("file-upload");
   const voiceButton = document.getElementById("voice-button");
+  const sendButton = document.getElementById("send-button");
 
-  if (!chat || !userInput || !fileInput || !voiceButton) {
+  if (!chat || !userInput || !fileInput || !voiceButton || !sendButton) {
     console.error("DOM elements missing:", {
       chat: !!chat,
       userInput: !!userInput,
       fileInput: !!fileInput,
-      voiceButton: !!voiceButton
+      voiceButton: !!voiceButton,
+      sendButton: !!sendButton
     });
     return;
   }
@@ -50,7 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/\n/g, "<br>");
   }
 
-  document.querySelector("button[onclick='sendMessage()']").onclick = async () => {
+  // Handle sending message (for both button click and Enter key)
+  async function handleSendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
     userInput.value = "";
@@ -63,7 +66,18 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error('sendMessage error:', error.message);
       appendMessage('Error: Could not fetch response.', "bot");
     }
-  };
+  }
+
+  // Send button click
+  sendButton.addEventListener("click", handleSendMessage);
+
+  // Enter key press
+  userInput.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault(); // Prevent form submission or newline
+      handleSendMessage();
+    }
+  });
 
   fileInput.addEventListener("change", async (event) => {
     const file = event.target.files[0];
