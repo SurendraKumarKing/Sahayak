@@ -1,0 +1,124 @@
+Sahayak API starter
+===================
+Runtime: Node 22.9+; TypeScript ESM / NodeNext. Commands from this package:
+  npm run dev          local node:http server with tsx watch
+  npm run build        compile src to dist
+  npm run typecheck    tsc --noEmit
+  npm test             node:test through tsx (no Azure calls)
+  npm start            compiled local server
+Dependencies are installed once by the root workspace integration, not this package.
+Build @sahayak/shared before API typechecking/building.
+
+Copy .env.example to .env for the local server; Node loads .env if present.
+Functions Core Tools uses local.settings.json: copy local.settings.example.json,
+run a build, then func start. The Functions host uses package main dist/functions.js.
+All API routes have /api prefix and return JSON, including errors:
+  { "error": { "code": "...", "message": "...", "requestId": "..." } }
+Never log request contents, token values or upstream error payloads.
+
+DEMO
+----
+Default local mode is demo; set SAHAYAK_MODE=demo explicitly for clarity.
+WEBSITE_HOSTNAME forbids demo, even if it was explicitly selected.
+Only fictional data. Demo has NO real authentication, Azure calls, OCR, STT,
+translation, general natural-language reasoning or automatic language detection.
+English only. Every assistant reply has device-speech fallback explicitly marked.
+Device read-aloud depends on the client's installed voices and permissions.
+
+Upload UTF-8 text/plain files with colon-delimited field labels, such as:
+  Applicant name:
+  State:
+Fill with exact pairs, including labels:
+  Applicant name: Fictional Example
+  State: Telangana
+Evidence text documents use the same format. Suggestions remain unconfirmed.
+No general language extraction or invented transcripts/translations occurs.
+Binary uploads, transcription and all translation return actionable 501 errors.
+
+Native/mobile clients should send a stable random UUID in x-sahayak-demo-owner.
+Browsers may instead use the HttpOnly demo cookie and credentials: include.
+This is a local owner namespace, NOT a security boundary or user authentication.
+Do not share this identifier. Memory has 20 documents/owner and 200 total, 24h TTL.
+The API binds 127.0.0.1:7071. API_HOST=0.0.0.0 permits a physical device to connect
+on a trusted private network. This exposes an unauthenticated local demo:
+never publish it to the internet, never use real PII, and restore loopback afterward.
+Set API_CORS_ORIGIN to exactly the browser app origin (default http://localhost:8081).
+CORS is not authentication and does not protect against native/network clients.
+
+AZURE
+-----
+Set SAHAYAK_MODE=azure. Missing configuration is a startup error, never a demo fallback.
+Required settings are in .env.example. All service endpoint variables must be HTTPS
+resource origins with no path; custom subdomains are required for keyless services.
+AZURE_SPEECH_RESOURCE_ID is also required: the Speech ARM resource ID is included in
+the aad#resourceId#token authorization format for TTS.
+DefaultAzureCredential uses managed identity when hosted; local Azure development
+can use az login with an identity assigned the necessary data-plane roles.
+
+Every route except GET /api/health (and browser CORS preflight) requires an Entra
+delegated Bearer JWT, tenant v2 issuer, configured audience and access_as_user scope.
+Application-only tokens are rejected. x-ms-client-principal is NEVER trusted.
+Remote JWKS supports key rollover. Configure the API app to issue v2 access tokens.
+This starter targets Azure public cloud, not sovereign-cloud authority endpoints.
+
+Services:
+* Document Intelligence prebuilt-layout, keyValuePairs, base64Source; async polling
+  with cancellation. UTF-8 text bypasses OCR but not content safety.
+* Azure Language LanguageDetection on each assistant/fill user turn. Switch only
+  at confidence >=0.75 and a Translator-supported code; otherwise retain prior language.
+* Translator dynamic supported language catalog; complete extracted text is translated
+  in lossless <=5000 UTF-16-unit source chunks. No page layout preservation is claimed.
+* Azure OpenAI AzureOpenAI client, API 2024-10-21, JSON mode, bounded validated output.
+  Requires a deployment supporting chat completions, JSON mode and adequate context.
+  Documents/history are untrusted. Field values must be verbatim grounded in supplied
+  evidence and require manual review; confirmed fields are never automatically changed.
+  Prompt/data separation does not eliminate prompt injection or model inaccuracies.
+* Speech fast transcription 2025-10-15, native multipart audio, up to 4 candidate
+  locales. Defaults en-IN/hi-IN/te-IN/ta-IN. Unknown or mixed detected locale is "und",
+  not a guessed language. Available regions/codec support are service-dependent.
+* TTS dynamic voice list, escaped SSML, inline MP3. Text >3000 characters, unavailable
+  voices, errors or 15s TTS timeouts preserve FULL text and explicitly request optional
+  device read-aloud instead. No partial document speech is silently returned.
+* Content Safety fail-closed text checks in <=4000-unit chunks, threshold severity>=4.
+  All user text used for generation and successful human-readable output is screened.
+  Uploaded binary images are analyzed via their extracted text, not image moderation.
+  Content Safety language coverage is not equivalent to Translator coverage; evaluate
+  policy and supported languages before production. No automated safety system is perfect.
+* Blob Storage retains only derived JSON at SHA256(owner)/UUID.json, not source bytes.
+  Reads enforce original creation+24h TTL. Writes do not extend application expiry.
+  Deployment lifecycle cleanup must delete old blobs physically. Service-side OCR/AI
+  retention and regional processing policies are independent and must be reviewed.
+  SDK conditional ETags reject overlapping updates. GET document returns ETag; clients
+  can send If-Match for stale-edit protection on PATCH/fill/DELETE. Without If-Match,
+  sequential edits from stale clients cannot be detected by the fixed JSON contract.
+
+Limits: 9MiB JSON body, 6MiB decoded upload, 40,000 extracted UTF-16 units, 80 fields,
+2,000 units/value, 150s operation deadline, 2MiB inline TTS. Oversize extraction/AI output
+fails explicitly; it is never silently truncated. Allowed documents: text/plain,
+application/pdf, image/png, image/jpeg. Allowed audio: audio/wav, audio/x-wav,
+audio/mpeg, audio/mp4, audio/m4a, audio/x-m4a, audio/aac, audio/webm, audio/ogg.
+MIME/signature/base64 checks are introductory validation, not malware scanning.
+Original uploads and embedded metadata can be sensitive; only use test data until
+privacy, compliance, malware handling, per-user rate limits and cost quotas are hardened.
+Deployment is not production-hardened, has no durable job queue, and long tasks may
+time out. After a failed/timed-out write, reload state before retrying.
+
+Routes are defined in shared schemas and app.ts. Export returns a UTF-8 REVIEWED
+ANSWER SHEET, never a modified/signed original PDF. Nonempty unconfirmed values
+cause 409. Deleting removes the derived document; upstream service retention differs.
+No public document/audio/SAS URLs are generated.
+
+Scheme catalog is identical in both modes: illustrative PM-KISAN, National Scholarship
+Portal, MUDRA leads with official links. Prefilters distinguish missing booleans from
+false and zero income from missing income. They are not eligibility decisions.
+No benefit amounts or application success are promised. Maintain official rules,
+dates and sources before any real use. No automatic government submission.
+Twilio, DigiLocker, private networking and completed-original-PDF rendering are out of scope.
+
+Verified implementation references (review service docs before deployment):
+https://learn.microsoft.com/en-us/javascript/api/overview/azure/ai-document-intelligence-rest-readme?view=azure-node-latest
+https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/reference/authentication
+https://learn.microsoft.com/en-us/azure/ai-services/language-service/language-detection/quickstart
+https://learn.microsoft.com/en-us/azure/ai-services/speech-service/fast-transcription-create
+https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-text-to-speech
+https://learn.microsoft.com/en-us/rest/api/contentsafety/text-operations/analyze-text?view=rest-contentsafety-2024-09-01

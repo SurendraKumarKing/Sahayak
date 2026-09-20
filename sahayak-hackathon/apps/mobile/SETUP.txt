@@ -1,0 +1,80 @@
+SAHAYAK MOBILE / WEB
+
+This is a native React Native client rendered with React Native Web on browsers,
+not a standalone HTML mock-up. React 19.1, React Native 0.81.5, Expo SDK 54.
+
+From the repository root, after the workspace dependencies and shared package
+have been built:
+  npm run start --workspace @sahayak/mobile
+  npm run web --workspace @sahayak/mobile
+  npm run typecheck --workspace @sahayak/mobile
+  npm run export:web --workspace @sahayak/mobile
+
+Copy apps/mobile/.env.example to apps/mobile/.env and restart Expo after changes.
+Default API: http://localhost:7071/api. For a physical phone use a reachable LAN
+host and allow the local development API port through your firewall. Android
+emulator localhost points at itself; use http://10.0.2.2:7071/api for its host.
+Native preview/release builds may block cleartext HTTP; use HTTPS for those.
+Never expose unauthenticated demo services publicly. Configure API CORS for the
+web origin (local web: http://localhost:8081). Deployed web needs HTTPS endpoints.
+
+AZURE SIGN-IN
+Set EXPO_PUBLIC_ENTRA_TENANT_ID, EXPO_PUBLIC_ENTRA_CLIENT_ID and
+EXPO_PUBLIC_ENTRA_API_SCOPE to the deployed API delegated permission scope.
+Only public identifiers go here. Never put a client secret, Azure service key,
+or connection string in EXPO_PUBLIC variables or the client source.
+
+Register http://localhost:8081 as a Single-page application redirect for local
+web. Register deployed HTTPS origin similarly. The app defaults to current web
+origin; optional EXPO_PUBLIC_ENTRA_REDIRECT_URI must match registration exactly.
+Native requires an installed application with sahayak://auth registered as a
+mobile/desktop public-client redirect. Use an installed preview or local native
+build; Expo Go's shared runtime cannot reliably handle custom-scheme OAuth.
+Configure API exposure and delegated consent in Entra. Browser code exchange
+requires a SPA redirect; do not register web as a confidential web application.
+Authorization code + PKCE is used; access tokens stay in memory. Expiry requires
+sign-in again. App sign-out forgets its token but does not clear Microsoft SSO.
+
+BUILD
+eas.json supplies internal APK development/preview and production profiles.
+For an installed local native build use the Expo run:android/run:ios workflow
+with the platform SDK installed, or an EAS preview build. The development
+profile is an internal standalone APK, not an expo-dev-client development client.
+Native plugin/permission changes require rebuilding the installed application.
+The app requests microphone permission only on explicit Record voice.
+
+DEMO AND PRIVACY
+The API health endpoint selects DEMO vs AZURE; the badge is not a local switch.
+Demo permits English deterministic behavior and plain-text documents; it does
+not pretend to OCR images/PDFs, translate languages, or transcribe recordings.
+Use fictional documents and details. Device read-aloud uses installed voices.
+Azure mode requires sign-in and an explicit processing-consent checkbox before
+data submissions. File selection is only opened by an explicit upload action.
+Microphone transcripts enter an editable draft; they are never auto-submitted.
+Automatic voice playback is off by default and browser policies can restrict it.
+Web recording needs HTTPS or localhost and audio/webm recording support.
+Native recording uses AAC in M4A. Every recording is bounded to 60s and 6MB.
+
+Per-session document references and text live in memory. Refresh/sign-out clears
+local references but does not delete remote documents; use Delete document.
+Document picker copies and recordings are removed from app cache after use.
+Audio cache is cleared on stop/completion; export cache is cleared after share.
+No client persists access tokens. The client never submits official applications.
+Unauthenticated demo requests include a random x-sahayak-demo-owner UUID that is
+stable for this app session on native and web. This separates demo documents;
+it is not authentication. Reload starts a new local session.
+
+EXPORT
+Review and confirm each nonempty field. Editing resets confirmation. Export saves
+the current reviewed fields and the service independently rejects unconfirmed
+answers. Output is reviewed-answer.txt (UTF-8), NOT a layout-preserving completed
+official PDF. Browser downloads and native share sheets save this answer sheet.
+
+VALIDATION
+The repository owner installs dependencies after all workspace manifests exist.
+Run typecheck and export:web after shared build. Manual checks: demo consent,
+sample upload, explanation, labeled draft fill, edit resets confirmation, export
+blocked until confirmed, deletion, numeric validation, retry on disconnected API,
+Azure unauthenticated startup, PKCE login, language list, microphone permission
+denial, replay/stop, RTL replies, and keyboard focus. Real Azure OCR/translation/
+speech and native OAuth need configured services and device/browser testing.

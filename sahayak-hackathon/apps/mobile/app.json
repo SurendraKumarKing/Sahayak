@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Sahayak",
+    "slug": "sahayak",
+    "version": "1.0.0",
+    "scheme": "sahayak",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.sahayak.assistant"
+    },
+    "android": {
+      "package": "org.sahayak.assistant",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "Sahayak — help, in your language"
+    },
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Sahayak to record a short voice message for transcription after your consent.",
+          "recordAudioAndroid": true
+        }
+      ],
+      "expo-document-picker",
+      "expo-web-browser",
+      "expo-asset"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "sahayak-hackathon",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["packages/shared", "apps/api", "apps/mobile"],
+  "scripts": {
+    "build:shared": "npm run build --workspace @sahayak/shared",
+    "build:api": "npm run build:shared && npm run build --workspace @sahayak/api",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "test": "npm run build:shared && npm run test --workspace @sahayak/api",
+    "api": "npm run build:shared && npm run dev --workspace @sahayak/api",
+    "mobile": "npm run start --workspace @sahayak/mobile",
+    "web": "npm run web --workspace @sahayak/mobile"
+  },
+  "engines": { "node": ">=22.9.0" },
+  "overrides": { "expo-asset": "~12.0.13" },
+  "devDependencies": { "typescript": "~5.9.2" }
+}
